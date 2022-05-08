@@ -18,3 +18,9 @@ type Game struct {
 	UserId      int       `json:"-"`
 	Available   bool      `json:"available"`
 }
+
+type GameUploadToken struct {
+	GameId      int       `json:"-"`
+	UploadToken string    `json:"upload_token"`
+	Expire      time.Time `json:"expire"`
+}

@@ -72,7 +72,7 @@ func Register(user *Registration) error {
 	if err != nil {
 		return err
 	}
-	return database.AddUser(user.Username, user.Firstname, user.Lastname, hash, user.Pronouns)
+	return database.AddUser(user.Username, hash)
 }
 
 func token(userId int) (string, error) {

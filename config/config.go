@@ -10,7 +10,12 @@ import (
 type Configuration struct {
 	Database DatabaseConfiguration `yaml:"database"`
 	Features FeaturesConfiguration `yaml:"features"`
-	Cache    string                `yaml:"cache"`
+	Path     PathConfiguration     `yaml:"path"`
+}
+
+type PathConfiguration struct {
+	Cache   string `yaml:"cache"`
+	Storage string `yaml:"storage"`
 }
 
 type DatabaseConfiguration struct {
@@ -47,6 +52,6 @@ func Features() *FeaturesConfiguration {
 	return &currentConfig.Features
 }
 
-func Cache() string {
-	return currentConfig.Cache
+func Path() *PathConfiguration {
+	return &currentConfig.Path
 }

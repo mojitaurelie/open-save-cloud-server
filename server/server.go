@@ -20,16 +20,20 @@ func Serve() {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(recovery)
-	router.Route("/api", func(r chi.Router) {
-		r.Post("/login", Login)
-		if config.Features().AllowRegister {
-			r.Post("/register", Register)
-		}
-		r.Route("/system", func(systemRouter chi.Router) {
-			systemRouter.Get("/information", Information)
-		})
-		r.Group(func(secureRouter chi.Router) {
-			secureRouter.Use(authMiddleware)
+	router.Route("/api", func(rApi chi.Router) {
+		rApi.Route("/v1", func(r chi.Router) {
+			r.Post("/login", Login)
+			if config.Features().AllowRegister {
+				r.Post("/register", Register)
+			}
+			r.Route("/system", func(systemRouter chi.Router) {
+				systemRouter.Get("/information", Information)
+			})
+			r.Group(func(secureRouter chi.Router) {
+				secureRouter.Use(authMiddleware)
+				secureRouter.Post("/game/create", CreateGame)
+				secureRouter.Post("/game/upload/init", AskForUpload)
+			})
 		})
 	})
 	log.Println("Server is listening...")
