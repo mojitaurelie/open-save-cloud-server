@@ -23,6 +23,7 @@ func Serve() {
 	router.Route("/api", func(rApi chi.Router) {
 		rApi.Route("/v1", func(r chi.Router) {
 			r.Post("/login", Login)
+			r.Post("/check/token", CheckToken)
 			if config.Features().AllowRegister {
 				r.Post("/register", Register)
 			}

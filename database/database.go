@@ -25,13 +25,20 @@ func init() {
 	locks = make(map[int]GameUploadToken)
 	dbConfig := config.Database()
 	var err error
-	db, err = gorm.Open(mysql.Open(
-		fmt.Sprintf("%s:%s@tcp(%s:%d)/transagenda?charset=utf8mb4&parseTime=True&loc=Local",
+	connectionString := ""
+	if dbConfig.Password != nil {
+		connectionString = fmt.Sprintf("%s:%s@tcp(%s:%d)/osc?charset=utf8mb4&parseTime=True&loc=Local",
 			dbConfig.Username,
-			dbConfig.Password,
+			*dbConfig.Password,
 			dbConfig.Host,
-			dbConfig.Port),
-	), &gorm.Config{
+			dbConfig.Port)
+	} else {
+		connectionString = fmt.Sprintf("%s@tcp(%s:%d)/osc?charset=utf8mb4&parseTime=True&loc=Local",
+			dbConfig.Username,
+			dbConfig.Host,
+			dbConfig.Port)
+	}
+	db, err = gorm.Open(mysql.Open(connectionString), &gorm.Config{
 		Logger: logger.New(
 			log.New(os.Stdout, "", log.LstdFlags), // io writer
 			logger.Config{

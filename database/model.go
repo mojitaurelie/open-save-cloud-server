@@ -9,14 +9,14 @@ type User struct {
 }
 
 type Game struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Revision    int       `json:"rev"`
-	PathStorage string    `json:"-"`
-	Hash        string    `json:"hash"`
-	LastUpdate  time.Time `json:"last_update"`
-	UserId      int       `json:"-"`
-	Available   bool      `json:"available"`
+	ID          int        `json:"id"`
+	Name        string     `json:"name"`
+	Revision    int        `json:"rev"`
+	PathStorage string     `json:"-"`
+	Hash        *string    `json:"hash"`
+	LastUpdate  *time.Time `json:"last_update"`
+	UserId      int        `json:"-"`
+	Available   bool       `json:"available"`
 }
 
 type GameUploadToken struct {

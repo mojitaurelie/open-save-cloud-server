@@ -14,6 +14,10 @@ type Credential struct {
 	Password string `json:"password"`
 }
 
+type TokenValidation struct {
+	Valid bool `json:"valid"`
+}
+
 func Login(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -59,6 +63,34 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		Message:   "You are now registered",
 		Timestamp: time.Now(),
 		Status:    200,
+	}
+	ok(payload, w, r)
+}
+
+func CheckToken(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	credential := new(authentication.AccessToken)
+	err = json.Unmarshal(body, credential)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	_, err = authentication.ParseToken(credential.Token)
+	if err != nil {
+		payload := TokenValidation{
+			Valid: false,
+		}
+		ok(payload, w, r)
+		return
+	}
+	payload := TokenValidation{
+		Valid: true,
 	}
 	ok(payload, w, r)
 }
