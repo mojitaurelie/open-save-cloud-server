@@ -1,15 +1,20 @@
 package database
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"io"
 	"log"
+	"mime/multipart"
 	"opensavecloudserver/config"
 	"os"
+	"path"
 	"sync"
 	"time"
 )
@@ -115,7 +120,7 @@ func CreateGame(userId int, name string) (*Game, error) {
 	game := &Game{
 		Name:        name,
 		Revision:    0,
-		PathStorage: gameUUID.String(),
+		PathStorage: gameUUID.String() + ".bin",
 		UserId:      userId,
 		Available:   false,
 	}
@@ -135,12 +140,72 @@ func AskForUpload(userId, gameId int) (*GameUploadToken, error) {
 	}
 	if _, ok := locks[gameId]; !ok {
 		token := uuid.New()
-		return &GameUploadToken{
+		lock := GameUploadToken{
 			GameId:      gameId,
 			UploadToken: token.String(),
-		}, nil
+		}
+		locks[gameId] = lock
+		return &lock, nil
 	}
 	return nil, errors.New("game already locked")
+}
+
+func CheckUploadToken(uploadToken string) (int, bool) {
+	mu.Lock()
+	defer mu.Unlock()
+	for _, lock := range locks {
+		if lock.UploadToken == uploadToken {
+			return lock.GameId, true
+		}
+	}
+	return -1, false
+}
+
+func UploadSave(file multipart.File, game *Game) error {
+	filePath := path.Join(config.Path().Storage, game.PathStorage)
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, file)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateGameRevision(game *Game) error {
+	filePath := path.Join(config.Path().Storage, game.PathStorage)
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		return err
+	}
+	sum := hash.Sum(nil)
+	game.Revision += 1
+	if game.Hash == nil {
+		game.Hash = new(string)
+	}
+	*game.Hash = hex.EncodeToString(sum)
+	game.Available = true
+	if game.LastUpdate == nil {
+		game.LastUpdate = new(time.Time)
+	}
+	*game.LastUpdate = time.Now()
+	return nil
+}
+
+func UnlockGame(gameId int) {
+	mu.Lock()
+	defer mu.Unlock()
+	delete(locks, gameId)
 }
 
 // clearLocks clear lock of zombi upload
