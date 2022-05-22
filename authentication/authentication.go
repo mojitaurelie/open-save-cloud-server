@@ -7,7 +7,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"opensavecloudserver/database"
-	"time"
 )
 
 var secret []byte
@@ -78,7 +77,6 @@ func Register(user *Registration) error {
 func token(userId int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 		"sub": userId,
-		"exp": time.Now().Add(1 * time.Hour).Unix(),
 	})
 	return token.SignedString(secret)
 }

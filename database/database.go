@@ -199,6 +199,10 @@ func UpdateGameRevision(game *Game) error {
 		game.LastUpdate = new(time.Time)
 	}
 	*game.LastUpdate = time.Now()
+	err = db.Save(game).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

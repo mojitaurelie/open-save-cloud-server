@@ -6,7 +6,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"opensavecloudserver/config"
 	"opensavecloudserver/database"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -27,6 +30,7 @@ func CreateGame(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
 		internalServerError(w, r)
+		log.Println(err)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
@@ -55,12 +59,14 @@ func GameInfoByID(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
 		internalServerError(w, r)
+		log.Println(err)
 		return
 	}
 	queryId := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(queryId)
 	if err != nil {
 		badRequest("Game ID missing or not an int", w, r)
+		log.Println(err)
 		return
 	}
 	game, err := database.GameInfoById(userId, id)
@@ -76,6 +82,7 @@ func AskForUpload(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
 		internalServerError(w, r)
+		log.Println(err)
 		return
 	}
 	body, err := io.ReadAll(r.Body)
@@ -103,17 +110,20 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
 		internalServerError(w, r)
+		log.Println(err)
 		return
 	}
 	gameId, err := gameIdFromContext(r.Context())
 	if err != nil {
 		internalServerError(w, r)
+		log.Println(err)
 		return
 	}
 	defer database.UnlockGame(gameId)
 	game, err := database.GameInfoById(userId, gameId)
 	if err != nil {
 		internalServerError(w, r)
+		log.Println(err)
 		return
 	}
 	file, _, err := r.FormFile("file")
@@ -141,4 +151,45 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 		Status:    200,
 	}
 	ok(payload, w, r)
+}
+
+func Download(w http.ResponseWriter, r *http.Request) {
+	userId, err := userIdFromContext(r.Context())
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	gameId, err := gameIdFromContext(r.Context())
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	defer database.UnlockGame(gameId)
+	game, err := database.GameInfoById(userId, gameId)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	savePath := filepath.Join(config.Path().Storage, game.PathStorage)
+
+	if _, err := os.Stat(savePath); err == nil {
+		file, err := os.Open(savePath)
+		if err != nil {
+			internalServerError(w, r)
+			log.Println(err)
+			return
+		}
+		defer file.Close()
+		_, err = io.Copy(w, file)
+		if err != nil {
+			internalServerError(w, r)
+			log.Println(err)
+			return
+		}
+	} else {
+		http.NotFound(w, r)
+	}
 }

@@ -37,11 +37,12 @@ func Serve() {
 			r.Route("/game", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
 				secureRouter.Post("/create", CreateGame)
-				secureRouter.Get("/{id}", GameInfoByID)
+				secureRouter.Get("/info/{id}", GameInfoByID)
 				secureRouter.Post("/upload/init", AskForUpload)
 				secureRouter.Group(func(uploadRouter chi.Router) {
 					uploadRouter.Use(uploadMiddleware)
 					uploadRouter.Post("/upload", UploadSave)
+					uploadRouter.Get("/download", Download)
 				})
 			})
 
