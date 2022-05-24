@@ -1,8 +1,6 @@
 package database
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -175,31 +173,18 @@ func UploadSave(file multipart.File, game *Game) error {
 	return nil
 }
 
-func UpdateGameRevision(game *Game) error {
-	filePath := path.Join(config.Path().Storage, game.PathStorage)
-	file, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	hash := md5.New()
-	_, err = io.Copy(hash, file)
-	if err != nil {
-		return err
-	}
-	sum := hash.Sum(nil)
+func UpdateGameRevision(game *Game, hash string) error {
 	game.Revision += 1
 	if game.Hash == nil {
 		game.Hash = new(string)
 	}
-	*game.Hash = hex.EncodeToString(sum)
+	*game.Hash = hash
 	game.Available = true
 	if game.LastUpdate == nil {
 		game.LastUpdate = new(time.Time)
 	}
 	*game.LastUpdate = time.Now()
-	err = db.Save(game).Error
+	err := db.Save(game).Error
 	if err != nil {
 		return err
 	}

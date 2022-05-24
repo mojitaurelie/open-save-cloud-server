@@ -8,6 +8,7 @@ import (
 )
 
 type Configuration struct {
+	Server   ServerConfiguration   `yaml:"server"`
 	Database DatabaseConfiguration `yaml:"database"`
 	Features FeaturesConfiguration `yaml:"features"`
 	Path     PathConfiguration     `yaml:"path"`
@@ -16,6 +17,10 @@ type Configuration struct {
 type PathConfiguration struct {
 	Cache   string `yaml:"cache"`
 	Storage string `yaml:"storage"`
+}
+
+type ServerConfiguration struct {
+	Port int `yaml:"port"`
 }
 
 type DatabaseConfiguration struct {
@@ -54,4 +59,8 @@ func Features() *FeaturesConfiguration {
 
 func Path() *PathConfiguration {
 	return &currentConfig.Path
+}
+
+func Server() *ServerConfiguration {
+	return &currentConfig.Server
 }

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+	"unicode/utf8"
 )
 
 type NewGameInfo struct {
@@ -26,6 +27,7 @@ type LockError struct {
 	Message string `json:"message"`
 }
 
+// CreateGame create a game entry to the database
 func CreateGame(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
@@ -55,6 +57,7 @@ func CreateGame(w http.ResponseWriter, r *http.Request) {
 	ok(game, w, r)
 }
 
+// GameInfoByID get the game save information from the database
 func GameInfoByID(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
@@ -78,6 +81,24 @@ func GameInfoByID(w http.ResponseWriter, r *http.Request) {
 	ok(game, w, r)
 }
 
+// AllGamesInformation all game saves information for a user
+func AllGamesInformation(w http.ResponseWriter, r *http.Request) {
+	userId, err := userIdFromContext(r.Context())
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	games, err := database.GameInfosByUserId(userId)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	ok(games, w, r)
+}
+
+// AskForUpload check if the game save is not lock, then lock it and generate a token
 func AskForUpload(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
@@ -106,6 +127,7 @@ func AskForUpload(w http.ResponseWriter, r *http.Request) {
 	ok(token, w, r)
 }
 
+// UploadSave upload the game save archive to the storage folder
 func UploadSave(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {
@@ -120,6 +142,11 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer database.UnlockGame(gameId)
+	hash := r.Header.Get("X-Game-Save-Hash")
+	if utf8.RuneCountInString(hash) == 0 {
+		badRequest("The header X-Game-Save-Hash is missing", w, r)
+		return
+	}
 	game, err := database.GameInfoById(userId, gameId)
 	if err != nil {
 		internalServerError(w, r)
@@ -139,7 +166,7 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	err = database.UpdateGameRevision(game)
+	err = database.UpdateGameRevision(game, hash)
 	if err != nil {
 		internalServerError(w, r)
 		log.Println(err)
@@ -153,6 +180,7 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 	ok(payload, w, r)
 }
 
+// Download send the game save archive to the client
 func Download(w http.ResponseWriter, r *http.Request) {
 	userId, err := userIdFromContext(r.Context())
 	if err != nil {

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"log"
@@ -37,6 +38,7 @@ func Serve() {
 			r.Route("/game", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
 				secureRouter.Post("/create", CreateGame)
+				secureRouter.Get("/all", AllGamesInformation)
 				secureRouter.Get("/info/{id}", GameInfoByID)
 				secureRouter.Post("/upload/init", AskForUpload)
 				secureRouter.Group(func(uploadRouter chi.Router) {
@@ -49,7 +51,7 @@ func Serve() {
 		})
 	})
 	log.Println("Server is listening...")
-	err := http.ListenAndServe(":8080", router)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", config.Server().Port), router)
 	if err != nil {
 		log.Fatal(err)
 	}
