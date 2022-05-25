@@ -34,6 +34,11 @@ func Serve() {
 			}
 			r.Route("/system", func(systemRouter chi.Router) {
 				systemRouter.Get("/information", Information)
+
+			})
+			r.Route("/user", func(secureRouter chi.Router) {
+				secureRouter.Use(authMiddleware)
+				secureRouter.Get("/information", UserInformation)
 			})
 			r.Route("/game", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)

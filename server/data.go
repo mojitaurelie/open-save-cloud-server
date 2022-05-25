@@ -221,3 +221,19 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}
 }
+
+func UserInformation(w http.ResponseWriter, r *http.Request) {
+	userId, err := userIdFromContext(r.Context())
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	user, err := database.UserById(userId)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	ok(user, w, r)
+}

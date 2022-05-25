@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `games` (
   `name` varchar(255) NOT NULL DEFAULT '0',
   `revision` bigint unsigned NOT NULL DEFAULT '0',
   `path_storage` text NOT NULL,
-  `hash` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `hash` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
   `last_update` datetime DEFAULT NULL,
   `user_id` bigint unsigned NOT NULL DEFAULT '0',
   `available` tinyint unsigned NOT NULL DEFAULT '0',
