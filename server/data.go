@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"opensavecloudserver/config"
 	"opensavecloudserver/database"
+	"opensavecloudserver/upload"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -25,6 +26,11 @@ type UploadGameInfo struct {
 
 type LockError struct {
 	Message string `json:"message"`
+}
+
+type NewPassword struct {
+	Password       string `json:"password"`
+	VerifyPassword string `json:"verify_password"`
 }
 
 // CreateGame create a game entry to the database
@@ -119,7 +125,7 @@ func AskForUpload(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	token, err := database.AskForUpload(userId, gameInfo.GameId)
+	token, err := upload.AskForUpload(userId, gameInfo.GameId)
 	if err != nil {
 		ok(LockError{Message: err.Error()}, w, r)
 		return
@@ -141,7 +147,7 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	defer database.UnlockGame(gameId)
+	defer upload.UnlockGame(gameId)
 	hash := r.Header.Get("X-Game-Save-Hash")
 	if utf8.RuneCountInString(hash) == 0 {
 		badRequest("The header X-Game-Save-Hash is missing", w, r)
@@ -160,7 +166,7 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	err = database.UploadSave(file, game)
+	err = upload.UploadSave(file, game)
 	if err != nil {
 		internalServerError(w, r)
 		log.Println(err)
@@ -194,7 +200,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	defer database.UnlockGame(gameId)
+	defer upload.UnlockGame(gameId)
 	game, err := database.GameInfoById(userId, gameId)
 	if err != nil {
 		internalServerError(w, r)
@@ -236,4 +242,42 @@ func UserInformation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ok(user, w, r)
+}
+
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userId, err := userIdFromContext(r.Context())
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	newPassword := new(NewPassword)
+	err = json.Unmarshal(body, newPassword)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	if newPassword.Password != newPassword.VerifyPassword {
+		badRequest("password are not the same", w, r)
+		return
+	}
+	err = database.ChangePassword(userId, []byte(newPassword.Password))
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	payload := &successMessage{
+		Message:   "Password changed",
+		Timestamp: time.Now(),
+		Status:    200,
+	}
+	ok(payload, w, r)
 }

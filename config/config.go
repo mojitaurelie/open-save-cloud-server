@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
@@ -31,7 +32,8 @@ type DatabaseConfiguration struct {
 }
 
 type FeaturesConfiguration struct {
-	AllowRegister bool `yaml:"allow_register"`
+	AllowRegister    bool `yaml:"allow_register"`
+	PasswordHashCost *int `yaml:"password_hash_cost"`
 }
 
 var currentConfig *Configuration
@@ -46,6 +48,22 @@ func init() {
 	err = yaml.Unmarshal(configYamlContent, &currentConfig)
 	if err != nil {
 		log.Fatalf("error: %s", err)
+	}
+	checkConfig()
+}
+
+func checkConfig() {
+	if currentConfig.Features.PasswordHashCost == nil {
+		currentConfig.Features.PasswordHashCost = new(int)
+		*currentConfig.Features.PasswordHashCost = bcrypt.DefaultCost
+	} else if *currentConfig.Features.PasswordHashCost < bcrypt.MinCost && *currentConfig.Features.PasswordHashCost > bcrypt.MaxCost {
+		log.Fatalf("password_hash_cost is not on the supported range (%d < x < %d)", bcrypt.MinCost, bcrypt.MaxCost)
+	}
+	if _, err := os.Stat(currentConfig.Path.Storage); err != nil {
+		log.Fatal(err)
+	}
+	if _, err := os.Stat(currentConfig.Path.Cache); err != nil {
+		log.Fatal(err)
 	}
 }
 

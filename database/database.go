@@ -1,31 +1,23 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"io"
 	"log"
-	"mime/multipart"
 	"opensavecloudserver/config"
 	"os"
-	"path"
-	"sync"
 	"time"
-)
-
-var (
-	locks map[int]GameUploadToken
-	mu    sync.Mutex
 )
 
 var db *gorm.DB
 
+const adminRole string = "admin"
+
 func init() {
-	locks = make(map[int]GameUploadToken)
 	dbConfig := config.Database()
 	var err error
 	connectionString := ""
@@ -55,12 +47,6 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	go func() {
-		for {
-			time.Sleep(time.Minute)
-			clearLocks()
-		}
-	}()
 }
 
 // UserByUsername get a user by the username
@@ -69,6 +55,9 @@ func UserByUsername(username string) (*User, error) {
 	err := db.Model(User{}).Where(User{Username: username}).First(&user).Error
 	if err != nil {
 		return nil, err
+	}
+	if user.Role == adminRole {
+		user.IsAdmin = true
 	}
 	return user, nil
 }
@@ -80,6 +69,9 @@ func UserById(userId int) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	if user.Role == adminRole {
+		user.IsAdmin = true
+	}
 	return user, nil
 }
 
@@ -88,6 +80,16 @@ func AddUser(username string, password []byte) error {
 	user := &User{
 		Username: username,
 		Password: password,
+	}
+	return db.Save(user).Error
+}
+
+// AddAdmin register a user and set his role to admin
+func AddAdmin(username string, password []byte) error {
+	user := &User{
+		Username: username,
+		Password: password,
+		Role:     adminRole,
 	}
 	return db.Save(user).Error
 }
@@ -128,51 +130,6 @@ func CreateGame(userId int, name string) (*Game, error) {
 	return game, nil
 }
 
-// AskForUpload Create a lock for upload a new revision of a game
-func AskForUpload(userId, gameId int) (*GameUploadToken, error) {
-	mu.Lock()
-	defer mu.Unlock()
-	_, err := GameInfoById(userId, gameId)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := locks[gameId]; !ok {
-		token := uuid.New()
-		lock := GameUploadToken{
-			GameId:      gameId,
-			UploadToken: token.String(),
-		}
-		locks[gameId] = lock
-		return &lock, nil
-	}
-	return nil, errors.New("game already locked")
-}
-
-func CheckUploadToken(uploadToken string) (int, bool) {
-	mu.Lock()
-	defer mu.Unlock()
-	for _, lock := range locks {
-		if lock.UploadToken == uploadToken {
-			return lock.GameId, true
-		}
-	}
-	return -1, false
-}
-
-func UploadSave(file multipart.File, game *Game) error {
-	filePath := path.Join(config.Path().Storage, game.PathStorage)
-	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = io.Copy(f, file)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func UpdateGameRevision(game *Game, hash string) error {
 	game.Revision += 1
 	if game.Hash == nil {
@@ -191,24 +148,20 @@ func UpdateGameRevision(game *Game, hash string) error {
 	return nil
 }
 
-func UnlockGame(gameId int) {
-	mu.Lock()
-	defer mu.Unlock()
-	delete(locks, gameId)
-}
-
-// clearLocks clear lock of zombi upload
-func clearLocks() {
-	mu.Lock()
-	defer mu.Unlock()
-	now := time.Now()
-	toUnlock := make([]int, 0)
-	for gameId, lock := range locks {
-		if lock.Expire.After(now) {
-			toUnlock = append(toUnlock, gameId)
-		}
+// ChangePassword change the password of the user, the param 'password' must be the clear password
+func ChangePassword(userId int, password []byte) error {
+	user, err := UserById(userId)
+	if err != nil {
+		return err
 	}
-	for _, gameId := range toUnlock {
-		delete(locks, gameId)
+	hashedPassword, err := bcrypt.GenerateFromPassword(password, *config.Features().PasswordHashCost)
+	if err != nil {
+		return err
 	}
+	user.Password = hashedPassword
+	err = db.Save(user).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

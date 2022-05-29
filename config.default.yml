@@ -8,6 +8,7 @@ database:
   username: root
 features:
   allow_register: false
+  password_hash_cost: 16
 path:
   cache: "/var/osc/cache"
   storage: "/var/osc/storage"

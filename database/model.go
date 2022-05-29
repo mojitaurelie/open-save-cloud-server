@@ -5,7 +5,9 @@ import "time"
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
+	Role     string `json:"role"`
 	Password []byte `json:"-"`
+	IsAdmin  bool   `json:"is_admin" gorm:"-:all"`
 }
 
 type Game struct {
@@ -17,10 +19,4 @@ type Game struct {
 	LastUpdate  *time.Time `json:"last_update"`
 	UserId      int        `json:"-"`
 	Available   bool       `json:"available"`
-}
-
-type GameUploadToken struct {
-	GameId      int       `json:"-"`
-	UploadToken string    `json:"upload_token"`
-	Expire      time.Time `json:"expire"`
 }

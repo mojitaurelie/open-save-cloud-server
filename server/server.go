@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"opensavecloudserver/authentication"
 	"opensavecloudserver/config"
-	"opensavecloudserver/database"
+	"opensavecloudserver/upload"
 )
 
 type ContextKey string
@@ -39,6 +39,7 @@ func Serve() {
 			r.Route("/user", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
 				secureRouter.Get("/information", UserInformation)
+				secureRouter.Post("/passwd", ChangePassword)
 			})
 			r.Route("/game", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
@@ -86,7 +87,7 @@ func uploadMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("X-Upload-Key")
 		if len(header) > 0 {
-			if gameId, ok := database.CheckUploadToken(header); ok {
+			if gameId, ok := upload.CheckUploadToken(header); ok {
 				ctx := context.WithValue(r.Context(), GameIdKey, gameId)
 				r = r.WithContext(ctx)
 				next.ServeHTTP(w, r)
