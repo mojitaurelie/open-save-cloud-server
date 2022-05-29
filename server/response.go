@@ -64,6 +64,27 @@ func unauthorized(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func forbidden(w http.ResponseWriter, r *http.Request) {
+	e := httpError{
+		Status:    403,
+		Error:     "Unauthorized",
+		Message:   "The access is permanently forbidden and tied to the application logic, such as insufficient rights to a resource.",
+		Path:      r.RequestURI,
+		Timestamp: time.Now(),
+	}
+
+	payload, err := json.Marshal(e)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err = w.Write(payload)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func ok(obj interface{}, w http.ResponseWriter, _ *http.Request) {
 	payload, err := json.Marshal(obj)
 	if err != nil {

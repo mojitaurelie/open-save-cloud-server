@@ -281,3 +281,13 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	ok(payload, w, r)
 }
+
+func AllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := database.AllUsers()
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	ok(users, w, r)
+}

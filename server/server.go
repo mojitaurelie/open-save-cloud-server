@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"opensavecloudserver/authentication"
 	"opensavecloudserver/config"
+	"opensavecloudserver/database"
 	"opensavecloudserver/upload"
 )
 
@@ -34,7 +35,9 @@ func Serve() {
 			}
 			r.Route("/system", func(systemRouter chi.Router) {
 				systemRouter.Get("/information", Information)
-
+				systemRouter.Group(func(secureRouter chi.Router) {
+					secureRouter.Get("/users", AllUsers)
+				})
 			})
 			r.Route("/user", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
@@ -71,6 +74,35 @@ func authMiddleware(next http.Handler) http.Handler {
 			userId, err := authentication.ParseToken(header[7:])
 			if err != nil {
 				unauthorized(w, r)
+				return
+			}
+			ctx := context.WithValue(r.Context(), UserIdKey, userId)
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+			return
+		}
+		unauthorized(w, r)
+	})
+}
+
+// adminMiddleware check the role of the user before accessing to the resource
+func adminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		header := r.Header.Get("Authorization")
+		if len(header) > 7 {
+			userId, err := authentication.ParseToken(header[7:])
+			if err != nil {
+				unauthorized(w, r)
+				return
+			}
+			user, err := database.UserById(userId)
+			if err != nil {
+				internalServerError(w, r)
+				log.Println(err)
+				return
+			}
+			if !user.IsAdmin {
+				forbidden(w, r)
 				return
 			}
 			ctx := context.WithValue(r.Context(), UserIdKey, userId)

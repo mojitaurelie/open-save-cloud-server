@@ -49,6 +49,20 @@ func init() {
 	}
 }
 
+func AllUsers() ([]*User, error) {
+	var users []*User
+	err := db.Model(User{}).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, user := range users {
+		if user.Role == adminRole {
+			user.IsAdmin = true
+		}
+	}
+	return users, nil
+}
+
 // UserByUsername get a user by the username
 func UserByUsername(username string) (*User, error) {
 	var user *User

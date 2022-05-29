@@ -16,18 +16,15 @@
 
 
 -- Dumping database structure for osc
-DROP DATABASE IF EXISTS `osc`;
-CREATE DATABASE IF NOT EXISTS `osc` /*!40100 DEFAULT CHARACTER SET utf8 */ /*!80016 DEFAULT ENCRYPTION='N' */;
 USE `osc`;
 
 -- Dumping structure for table osc.games
-DROP TABLE IF EXISTS `games`;
 CREATE TABLE IF NOT EXISTS `games` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '0',
   `revision` bigint unsigned NOT NULL DEFAULT '0',
   `path_storage` text NOT NULL,
-  `hash` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+  `hash` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
   `last_update` datetime DEFAULT NULL,
   `user_id` bigint unsigned NOT NULL DEFAULT '0',
   `available` tinyint unsigned NOT NULL DEFAULT '0',
@@ -37,11 +34,11 @@ CREATE TABLE IF NOT EXISTS `games` (
 -- Data exporting was unselected.
 
 -- Dumping structure for table osc.users
-DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(50) NOT NULL,
   `password` binary(60) NOT NULL,
+  `role` varchar(10) NOT NULL DEFAULT 'user',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
