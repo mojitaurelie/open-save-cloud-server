@@ -2,6 +2,7 @@ package upload
 
 import (
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"io"
 	"mime/multipart"
@@ -9,6 +10,7 @@ import (
 	"opensavecloudserver/database"
 	"os"
 	"path"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -32,6 +34,31 @@ func init() {
 			clearLocks()
 		}
 	}()
+}
+
+func MoveFile(sourcePath, destPath string) error {
+	inputFile, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("couldn't open source file: %s", err)
+	}
+	outputFile, err := os.Create(destPath)
+	if err != nil {
+		inputFile.Close()
+		return fmt.Errorf("couldn't open dest file: %s", err)
+	}
+	defer outputFile.Close()
+	_, err = io.Copy(outputFile, inputFile)
+	if err != nil {
+		inputFile.Close()
+		return fmt.Errorf("writing to output file failed: %s", err)
+	}
+	inputFile.Close()
+	// The copy was successful, so now delete the original file
+	err = os.Remove(sourcePath)
+	if err != nil {
+		return fmt.Errorf("failed removing original file: %s", err)
+	}
+	return nil
 }
 
 // AskForUpload Create a lock for upload a new revision of a game
@@ -66,7 +93,7 @@ func CheckUploadToken(uploadToken string) (int, bool) {
 }
 
 func UploadSave(file multipart.File, game *database.Game) error {
-	filePath := path.Join(config.Path().Cache, string(rune(game.UserId)))
+	filePath := path.Join(config.Path().Cache, strconv.Itoa(game.UserId))
 	if _, err := os.Stat(filePath); err != nil {
 		err = os.Mkdir(filePath, 0766)
 		if err != nil {
@@ -91,7 +118,7 @@ func UploadSave(file multipart.File, game *database.Game) error {
 }
 
 func moveToStorage(cachePath string, game *database.Game) error {
-	filePath := path.Join(config.Path().Storage, string(rune(game.UserId)))
+	filePath := path.Join(config.Path().Storage, strconv.Itoa(game.UserId))
 	if _, err := os.Stat(filePath); err != nil {
 		err = os.Mkdir(filePath, 0766)
 		if err != nil {
@@ -104,7 +131,7 @@ func moveToStorage(cachePath string, game *database.Game) error {
 			return err
 		}
 	}
-	if err := os.Rename(cachePath, filePath); err != nil {
+	if err := MoveFile(cachePath, filePath); err != nil {
 		return err
 	}
 	return nil
