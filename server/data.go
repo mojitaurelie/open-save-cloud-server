@@ -207,7 +207,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	savePath := filepath.Join(config.Path().Storage, game.PathStorage)
+	savePath := filepath.Join(config.Path().Storage, strconv.Itoa(userId), game.PathStorage)
 
 	if _, err := os.Stat(savePath); err == nil {
 		file, err := os.Open(savePath)
