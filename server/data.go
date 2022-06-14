@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"opensavecloudserver/config"
 	"opensavecloudserver/database"
@@ -165,8 +166,13 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	defer file.Close()
-	err = upload.UploadSave(file, game)
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(file)
+	err = upload.ProcessFile(file, game)
 	if err != nil {
 		internalServerError(w, r)
 		log.Println(err)
@@ -216,7 +222,12 @@ func Download(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				log.Println(err)
+			}
+		}(file)
 		_, err = io.Copy(w, file)
 		if err != nil {
 			internalServerError(w, r)

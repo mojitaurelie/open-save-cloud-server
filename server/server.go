@@ -44,6 +44,10 @@ func Serve() {
 				secureRouter.Get("/information", UserInformation)
 				secureRouter.Post("/passwd", ChangePassword)
 			})
+			r.Route("/admin", func(secureRouter chi.Router) {
+				secureRouter.Use(authMiddleware)
+				secureRouter.Use(adminMiddleware)
+			})
 			r.Route("/game", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
 				secureRouter.Post("/create", CreateGame)

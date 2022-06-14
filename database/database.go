@@ -99,14 +99,14 @@ func AddUser(username string, password []byte) error {
 }
 
 // AddAdmin register a user and set his role to admin
-func AddAdmin(username string, password []byte) error {
+/*func AddAdmin(username string, password []byte) error {
 	user := &User{
 		Username: username,
 		Password: password,
 		Role:     adminRole,
 	}
 	return db.Save(user).Error
-}
+}*/
 
 // GameInfoById return information of a game
 func GameInfoById(userId, gameId int) (*Game, error) {

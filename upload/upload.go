@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"io"
+	"log"
 	"mime/multipart"
 	"opensavecloudserver/config"
 	"opensavecloudserver/database"
@@ -43,16 +44,30 @@ func MoveFile(sourcePath, destPath string) error {
 	}
 	outputFile, err := os.Create(destPath)
 	if err != nil {
-		inputFile.Close()
+		err := inputFile.Close()
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("couldn't open dest file: %s", err)
 	}
-	defer outputFile.Close()
+	defer func(outputFile *os.File) {
+		err := outputFile.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(outputFile)
 	_, err = io.Copy(outputFile, inputFile)
 	if err != nil {
-		inputFile.Close()
+		err := inputFile.Close()
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
-	inputFile.Close()
+	err = inputFile.Close()
+	if err != nil {
+		return err
+	}
 	// The copy was successful, so now delete the original file
 	err = os.Remove(sourcePath)
 	if err != nil {
@@ -92,7 +107,7 @@ func CheckUploadToken(uploadToken string) (int, bool) {
 	return -1, false
 }
 
-func UploadSave(file multipart.File, game *database.Game) error {
+func ProcessFile(file multipart.File, game *database.Game) error {
 	filePath := path.Join(config.Path().Cache, strconv.Itoa(game.UserId))
 	if _, err := os.Stat(filePath); err != nil {
 		err = os.Mkdir(filePath, 0766)
@@ -105,7 +120,12 @@ func UploadSave(file multipart.File, game *database.Game) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(f)
 	_, err = io.Copy(f, file)
 	if err != nil {
 		return err
