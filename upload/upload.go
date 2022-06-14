@@ -163,6 +163,30 @@ func UnlockGame(gameId int) {
 	delete(locks, gameId)
 }
 
+// RemoveFolders remove all files of the user from storage and cache
+func RemoveFolders(userId int) error {
+	userPath := path.Join(config.Path().Storage, strconv.Itoa(userId))
+	userCache := path.Join(config.Path().Cache, strconv.Itoa(userId))
+	if _, err := os.Stat(userPath); err == nil {
+		err := os.RemoveAll(userPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	if _, err := os.Stat(userCache); err == nil {
+		err := os.RemoveAll(userCache)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return nil
+}
+
+func RemoveGame(userId int, game *database.Game) error {
+	filePath := path.Join(config.Path().Storage, strconv.Itoa(userId), game.PathStorage)
+	return os.Remove(filePath)
+}
+
 // clearLocks clear lock of zombi upload
 func clearLocks() {
 	mu.Lock()

@@ -16,11 +16,8 @@ type AccessToken struct {
 }
 
 type Registration struct {
-	Username  string `json:"username"`
-	Password  string `json:"password"`
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-	Pronouns  int    `json:"pronouns"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func init() {

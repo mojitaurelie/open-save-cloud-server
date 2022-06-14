@@ -35,9 +35,6 @@ func Serve() {
 			}
 			r.Route("/system", func(systemRouter chi.Router) {
 				systemRouter.Get("/information", Information)
-				systemRouter.Group(func(secureRouter chi.Router) {
-					secureRouter.Get("/users", AllUsers)
-				})
 			})
 			r.Route("/user", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
@@ -45,13 +42,20 @@ func Serve() {
 				secureRouter.Post("/passwd", ChangePassword)
 			})
 			r.Route("/admin", func(secureRouter chi.Router) {
-				secureRouter.Use(authMiddleware)
 				secureRouter.Use(adminMiddleware)
+				secureRouter.Post("/user", AddUser)
+				secureRouter.Post("/user/passwd/{id}", ChangeUserPassword)
+				secureRouter.Delete("/user/{id}", RemoveUser)
+				secureRouter.Get("/user/{id}", User)
+				secureRouter.Get("/users", AllUsers)
+				secureRouter.Get("/user/role/admin/{id}", SetAdmin)
+				secureRouter.Get("/user/role/user/{id}", SetNotAdmin)
 			})
 			r.Route("/game", func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
 				secureRouter.Post("/create", CreateGame)
 				secureRouter.Get("/all", AllGamesInformation)
+				secureRouter.Delete("/remove/{id}", RemoveGame)
 				secureRouter.Get("/info/{id}", GameInfoByID)
 				secureRouter.Post("/upload/init", AskForUpload)
 				secureRouter.Group(func(uploadRouter chi.Router) {

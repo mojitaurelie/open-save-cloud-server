@@ -81,7 +81,7 @@ func GameInfoByID(w http.ResponseWriter, r *http.Request) {
 	}
 	game, err := database.GameInfoById(userId, id)
 	if err != nil {
-		internalServerError(w, r)
+		notFound(err.Error(), w, r)
 		log.Println(err)
 		return
 	}
@@ -293,12 +293,31 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ok(payload, w, r)
 }
 
-func AllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := database.AllUsers()
+func RemoveGame(w http.ResponseWriter, r *http.Request) {
+	userId, err := userIdFromContext(r.Context())
 	if err != nil {
 		internalServerError(w, r)
 		log.Println(err)
 		return
 	}
-	ok(users, w, r)
+	queryId := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(queryId)
+	if err != nil {
+		badRequest("Game ID missing or not an int", w, r)
+		log.Println(err)
+		return
+	}
+	game, err := database.GameInfoById(userId, id)
+	if err != nil {
+		notFound(err.Error(), w, r)
+		log.Println(err)
+		return
+	}
+	err = upload.RemoveGame(userId, game)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	ok(game, w, r)
 }

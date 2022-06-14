@@ -15,7 +15,8 @@ import (
 
 var db *gorm.DB
 
-const adminRole string = "admin"
+const AdminRole string = "admin"
+const UserRole string = "user"
 
 func init() {
 	dbConfig := config.Database()
@@ -56,7 +57,7 @@ func AllUsers() ([]*User, error) {
 		return nil, err
 	}
 	for _, user := range users {
-		if user.Role == adminRole {
+		if user.Role == AdminRole {
 			user.IsAdmin = true
 		}
 	}
@@ -70,7 +71,7 @@ func UserByUsername(username string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if user.Role == adminRole {
+	if user.Role == AdminRole {
 		user.IsAdmin = true
 	}
 	return user, nil
@@ -79,11 +80,11 @@ func UserByUsername(username string) (*User, error) {
 // UserById get a user
 func UserById(userId int) (*User, error) {
 	var user *User
-	err := db.Model(User{}).Where(User{ID: userId}).First(&user).Error
+	err := db.Model(User{}).Where(userId).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
-	if user.Role == adminRole {
+	if user.Role == AdminRole {
 		user.IsAdmin = true
 	}
 	return user, nil
@@ -98,12 +99,24 @@ func AddUser(username string, password []byte) error {
 	return db.Save(user).Error
 }
 
+func SaveUser(user *User) error {
+	return db.Save(user).Error
+}
+
+func RemoveUser(user *User) error {
+	return db.Delete(User{}, user.ID).Error
+}
+
+func RemoveAllUserGameEntries(user *User) error {
+	return db.Delete(Game{}, Game{UserId: user.ID}).Error
+}
+
 // AddAdmin register a user and set his role to admin
 /*func AddAdmin(username string, password []byte) error {
 	user := &User{
 		Username: username,
 		Password: password,
-		Role:     adminRole,
+		Role:     AdminRole,
 	}
 	return db.Save(user).Error
 }*/

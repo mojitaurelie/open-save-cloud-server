@@ -42,6 +42,27 @@ func internalServerError(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func notFound(message string, w http.ResponseWriter, r *http.Request) {
+	e := httpError{
+		Status:    404,
+		Error:     "Not Found",
+		Message:   message,
+		Path:      r.RequestURI,
+		Timestamp: time.Now(),
+	}
+
+	payload, err := json.Marshal(e)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err = w.Write(payload)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func unauthorized(w http.ResponseWriter, r *http.Request) {
 	e := httpError{
 		Status:    401,
