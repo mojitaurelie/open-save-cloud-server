@@ -18,7 +18,7 @@ var db *gorm.DB
 const AdminRole string = "admin"
 const UserRole string = "user"
 
-func init() {
+func Init() {
 	dbConfig := config.Database()
 	var err error
 	connectionString := ""

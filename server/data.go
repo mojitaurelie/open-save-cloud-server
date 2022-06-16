@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -154,6 +155,11 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 		badRequest("The header X-Game-Save-Hash is missing", w, r)
 		return
 	}
+	archiveHash := strings.ToLower(r.Header.Get("X-Hash"))
+	if utf8.RuneCountInString(hash) == 0 {
+		badRequest("The header X-Hash is missing", w, r)
+		return
+	}
 	game, err := database.GameInfoById(userId, gameId)
 	if err != nil {
 		internalServerError(w, r)
@@ -172,7 +178,13 @@ func UploadSave(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 		}
 	}(file)
-	err = upload.ProcessFile(file, game)
+	err = upload.UploadToCache(file, game)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	err = upload.ValidateAndMove(game, archiveHash)
 	if err != nil {
 		internalServerError(w, r)
 		log.Println(err)
@@ -216,6 +228,12 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	savePath := filepath.Join(config.Path().Storage, strconv.Itoa(userId), game.PathStorage)
 
 	if _, err := os.Stat(savePath); err == nil {
+		hash, err := upload.FileHash(savePath)
+		if err != nil {
+			internalServerError(w, r)
+			log.Println(err)
+			return
+		}
 		file, err := os.Open(savePath)
 		if err != nil {
 			internalServerError(w, r)
@@ -228,6 +246,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 				log.Println(err)
 			}
 		}(file)
+		w.Header().Add("X-Hash", strings.ToUpper(hash))
 		_, err = io.Copy(w, file)
 		if err != nil {
 			internalServerError(w, r)

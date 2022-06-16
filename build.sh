@@ -1,6 +1,6 @@
 #!/bin/bash
 
-platforms=("windows/amd64" "windows/arm64" "darwin/amd64" "darwin/arm64" "linux/amd64" "linux/arm64")
+platforms=("windows/amd64" "linux/amd64" "linux/arm64" "linux/arm")
 
 if [[ -d "./build" ]]
 then
@@ -8,7 +8,6 @@ then
 fi
 
 mkdir build
-cd build
 
 for platform in "${platforms[@]}"
 do
@@ -16,9 +15,21 @@ do
     platform_split=(${platform//\// })
     GOOS=${platform_split[0]}
     GOARCH=${platform_split[1]}
-    output_name='osc-'$GOOS'-'$GOARCH
+    output_name='./build/osc-'$GOOS'-'$GOARCH
     if [ $GOOS = "windows" ]; then
         output_name+='.exe'
+        go generate
+        env GOAMD64=v3 GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=1 go build -o $output_name -a
+    else
+        if [ $GOARCH = "arm" ]; then
+            env GOARM=7 GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 go build -o $output_name -a
+        else
+            if [ $GOARCH = "amd64" ]; then
+                env GOAMD64=v3 GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 go build -o $output_name -a
+            else
+                env GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 go build -o $output_name -a
+            fi
+        fi
     fi
-    env GOOS=$GOOS GOARCH=$GOARCH go build -o $output_name -a ../main.go
+
 done

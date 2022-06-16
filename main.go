@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 package main
 
 import (
@@ -9,5 +12,6 @@ import (
 
 func main() {
 	fmt.Printf("Open Save Cloud (Server) %s (%s %s)\n", constant.Version, runtime.GOOS, runtime.GOARCH)
+	InitCommon()
 	server.Serve()
 }

@@ -38,7 +38,7 @@ type FeaturesConfiguration struct {
 
 var currentConfig *Configuration
 
-func init() {
+func Init() {
 	path := flag.String("config", "./config.yml", "Set the configuration file path")
 	flag.Parse()
 	configYamlContent, err := os.ReadFile(*path)

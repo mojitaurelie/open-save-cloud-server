@@ -36,35 +36,35 @@ func Serve() {
 			r.Route("/system", func(systemRouter chi.Router) {
 				systemRouter.Get("/information", Information)
 			})
-			r.Route("/user", func(secureRouter chi.Router) {
-				secureRouter.Use(authMiddleware)
-				secureRouter.Get("/information", UserInformation)
-				secureRouter.Post("/passwd", ChangePassword)
+			r.Route("/admin", func(adminRouter chi.Router) {
+				adminRouter.Use(adminMiddleware)
+				adminRouter.Post("/user", AddUser)
+				adminRouter.Post("/user/passwd/{id}", ChangeUserPassword)
+				adminRouter.Delete("/user/{id}", RemoveUser)
+				adminRouter.Get("/user/{id}", User)
+				adminRouter.Get("/users", AllUsers)
+				adminRouter.Get("/user/role/admin/{id}", SetAdmin)
+				adminRouter.Get("/user/role/user/{id}", SetNotAdmin)
 			})
-			r.Route("/admin", func(secureRouter chi.Router) {
-				secureRouter.Use(adminMiddleware)
-				secureRouter.Post("/user", AddUser)
-				secureRouter.Post("/user/passwd/{id}", ChangeUserPassword)
-				secureRouter.Delete("/user/{id}", RemoveUser)
-				secureRouter.Get("/user/{id}", User)
-				secureRouter.Get("/users", AllUsers)
-				secureRouter.Get("/user/role/admin/{id}", SetAdmin)
-				secureRouter.Get("/user/role/user/{id}", SetNotAdmin)
-			})
-			r.Route("/game", func(secureRouter chi.Router) {
+			r.Group(func(secureRouter chi.Router) {
 				secureRouter.Use(authMiddleware)
-				secureRouter.Post("/create", CreateGame)
-				secureRouter.Get("/all", AllGamesInformation)
-				secureRouter.Delete("/remove/{id}", RemoveGame)
-				secureRouter.Get("/info/{id}", GameInfoByID)
-				secureRouter.Post("/upload/init", AskForUpload)
-				secureRouter.Group(func(uploadRouter chi.Router) {
-					uploadRouter.Use(uploadMiddleware)
-					uploadRouter.Post("/upload", UploadSave)
-					uploadRouter.Get("/download", Download)
+				secureRouter.Route("/user", func(userRouter chi.Router) {
+					userRouter.Get("/information", UserInformation)
+					userRouter.Post("/passwd", ChangePassword)
+				})
+				secureRouter.Route("/game", func(gameRouter chi.Router) {
+					gameRouter.Post("/create", CreateGame)
+					gameRouter.Get("/all", AllGamesInformation)
+					gameRouter.Delete("/remove/{id}", RemoveGame)
+					gameRouter.Get("/info/{id}", GameInfoByID)
+					gameRouter.Post("/upload/init", AskForUpload)
+					gameRouter.Group(func(uploadRouter chi.Router) {
+						uploadRouter.Use(uploadMiddleware)
+						uploadRouter.Post("/upload", UploadSave)
+						uploadRouter.Get("/download", Download)
+					})
 				})
 			})
-
 		})
 	})
 	log.Println("Server is listening...")

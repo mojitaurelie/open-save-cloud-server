@@ -1,6 +1,7 @@
 package upload
 
 import (
+	"crypto/sha512"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -107,7 +108,7 @@ func CheckUploadToken(uploadToken string) (int, bool) {
 	return -1, false
 }
 
-func ProcessFile(file multipart.File, game *database.Game) error {
+func UploadToCache(file multipart.File, game *database.Game) error {
 	filePath := path.Join(config.Path().Cache, strconv.Itoa(game.UserId))
 	if _, err := os.Stat(filePath); err != nil {
 		err = os.Mkdir(filePath, 0766)
@@ -126,13 +127,30 @@ func ProcessFile(file multipart.File, game *database.Game) error {
 			log.Println(err)
 		}
 	}(f)
-	_, err = io.Copy(f, file)
+	if _, err := io.Copy(f, file); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ValidateAndMove(game *database.Game, hash string) error {
+	filePath := path.Join(config.Path().Cache, strconv.Itoa(game.UserId), game.PathStorage)
+	if err := checkHash(filePath, hash); err != nil {
+		return err
+	}
+	if err := moveToStorage(filePath, game); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkHash(path, hash string) error {
+	h, err := FileHash(path)
 	if err != nil {
 		return err
 	}
-	err = moveToStorage(filePath, game)
-	if err != nil {
-		return err
+	if h != hash {
+		return errors.New("hash is different")
 	}
 	return nil
 }
@@ -185,6 +203,24 @@ func RemoveFolders(userId int) error {
 func RemoveGame(userId int, game *database.Game) error {
 	filePath := path.Join(config.Path().Storage, strconv.Itoa(userId), game.PathStorage)
 	return os.Remove(filePath)
+}
+
+func FileHash(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(f)
+	h := sha512.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 // clearLocks clear lock of zombi upload
