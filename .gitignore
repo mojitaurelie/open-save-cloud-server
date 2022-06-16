@@ -4,3 +4,4 @@ opensavecloudserver
 storage/
 .idea/
 build
+*.log
