@@ -16,7 +16,7 @@
     "#1": {
       "0409": {
         "identity": {
-          "name": "Open Save Cloud Server",
+          "name": "Open Save Cloud",
           "version": "1.0.0.0"
         },
         "description": "",
@@ -47,9 +47,9 @@
         "info": {
           "0409": {
             "CompanyName": "Aurelie Delhaie",
-            "FileDescription": "The server of Open Save Cloud",
+            "FileDescription": "Open Save Cloud Server",
             "FileVersion": "1.0.0.0",
-            "ProductName": "Open Save Cloud Server",
+            "ProductName": "Open Save Cloud",
             "ProductVersion": "1.0.0.0"
           }
         }
