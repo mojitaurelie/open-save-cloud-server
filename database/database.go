@@ -77,6 +77,15 @@ func UserByUsername(username string) (*User, error) {
 	return user, nil
 }
 
+func ChangeUsername(userId int, newUsername string) error {
+	user, err := UserById(userId)
+	if err != nil {
+		return err
+	}
+	user.Username = newUsername
+	return db.Save(user).Error
+}
+
 // UserById get a user
 func UserById(userId int) (*User, error) {
 	var user *User

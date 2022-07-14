@@ -39,6 +39,7 @@ func Serve() {
 			r.Route("/admin", func(adminRouter chi.Router) {
 				adminRouter.Use(adminMiddleware)
 				adminRouter.Post("/user", AddUser)
+				adminRouter.Post("/user/username", ChangeUsername)
 				adminRouter.Post("/user/passwd/{id}", ChangeUserPassword)
 				adminRouter.Delete("/user/{id}", RemoveUser)
 				adminRouter.Get("/user/{id}", User)

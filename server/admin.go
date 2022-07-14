@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+type UpdateUsername struct {
+	Id       int    `json:"id"`
+	Username string `json:"username"`
+}
+
 func AddUser(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -171,6 +176,43 @@ func ChangeUserPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	payload := &successMessage{
 		Message:   "Password changed",
+		Timestamp: time.Now(),
+		Status:    200,
+	}
+	ok(payload, w, r)
+}
+
+func ChangeUsername(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	newUserInfo := new(UpdateUsername)
+	err = json.Unmarshal(body, newUserInfo)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	if len(newUserInfo.Username) < 3 {
+		badRequest("username need at least 3 characters", w, r)
+		return
+	}
+	_, err = database.UserByUsername(newUserInfo.Username)
+	if err == nil {
+		badRequest("username already exist", w, r)
+		return
+	}
+	err = database.ChangeUsername(newUserInfo.Id, newUserInfo.Username)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
+	payload := &successMessage{
+		Message:   "Username changed",
 		Timestamp: time.Now(),
 		Status:    200,
 	}
