@@ -120,6 +120,10 @@ func RemoveAllUserGameEntries(user *User) error {
 	return db.Delete(Game{}, Game{UserId: user.ID}).Error
 }
 
+func RemoveGame(game *Game) error {
+	return db.Delete(Game{}, Game{UserId: game.UserId, ID: game.ID}).Error
+}
+
 // AddAdmin register a user and set his role to admin
 /*func AddAdmin(username string, password []byte) error {
 	user := &User{

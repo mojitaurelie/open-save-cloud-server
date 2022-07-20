@@ -338,5 +338,11 @@ func RemoveGame(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+	err = database.RemoveGame(game)
+	if err != nil {
+		internalServerError(w, r)
+		log.Println(err)
+		return
+	}
 	ok(game, w, r)
 }
